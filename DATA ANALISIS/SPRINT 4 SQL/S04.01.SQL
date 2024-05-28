@@ -8,8 +8,10 @@ Partint d'alguns arxius CSV dissenyaràs i crearàs la teva base de dades.
 Descarrega els arxius CSV, estudia’ls i dissenya una base de dades amb un esquema d'estrella que contingui, almenys 4 taules de les quals
 puguis realitzar les següents consultes: */
 
+-- Creació de la BBDD
 CREATE DATABASE Transactions4;
 
+-- Creació de la taula companies
 CREATE TABLE IF NOT EXISTS companies
 (
 	company_id VARCHAR(10) PRIMARY KEY,
@@ -37,7 +39,7 @@ CREATE TABLE IF NOT EXISTS users
 	address VARCHAR(255)
 );
 
-
+-- Creació de la taula credit_cards
 CREATE TABLE IF NOT EXISTS credit_cards
 (
 	id VARCHAR(10) PRIMARY KEY,
@@ -52,6 +54,7 @@ CREATE TABLE IF NOT EXISTS credit_cards
     FOREIGN KEY(user_id) REFERENCES users(id)  
 );
 
+-- Creació de la taula products
 CREATE TABLE IF NOT EXISTS products
 (
 	id INT PRIMARY KEY,
@@ -62,6 +65,7 @@ CREATE TABLE IF NOT EXISTS products
 	warehouse_id VARCHAR(10)
 );
 
+-- Creació de la taula transacctions
 CREATE TABLE IF NOT EXISTS transactions
 (
 	id VARCHAR(100) PRIMARY KEY,
@@ -79,6 +83,7 @@ CREATE TABLE IF NOT EXISTS transactions
     FOREIGN KEY(user_id) REFERENCES users(id)
 );
 
+-- Per últim creo la taula nexe: products_transactions
 CREATE TABLE IF NOT EXISTS products_transactions
 (
 	id VARCHAR(100),
@@ -86,6 +91,39 @@ CREATE TABLE IF NOT EXISTS products_transactions
     FOREIGN KEY(id) REFERENCES transactions(id),
     FOREIGN KEY(product_ids) REFERENCES products(id)
 );
+
+-- Intento esborrar el contingut de la taula companies per procedir a la importació de dades "manual"
+DELETE FROM companies;
+
+-- No em deixa pq estic en mode segur. Desactivo. 
+SET SQL_SAFE_UPDATES = 0;
+
+-- Rebo un altre error per les Foreing Keys:
+SET FOREIGN_KEY_CHECKS = 0;
+
+-- Esborro i torno a activar:
+DELETE FROM companies;
+SET FOREIGN_KEY_CHECKS = 1;
+SET SQL_SAFE_UPDATES = 1;
+
+-- Intento importar els arxius de companies "manualment"
+LOAD DATA INFILE 'G:/Mi unidad/ESTUDIS/TECH/IT ACADEMY/DATA ANALISIS/2. SQL/S4.01. Creació de Base de Dades/companies.csv'
+INTO TABLE companies
+FIELDS TERMINATED BY ','
+LINES TERMINATED BY '\n'
+IGNORE 1 LINES; -- per ignorar els títols de les columnes
+
+-- Em dona error --secure-file-priv i haig de buscar la carpeta segura al meu PC
+SHOW VARIABLES LIKE 'secure_file_priv';
+
+-- Intento importar els arxius de companies "manualment" desde la carpeta segura
+LOAD DATA INFILE 'C:/ProgramData/MySQL/MySQL Server 8.0/Uploads/companies.csv'
+INTO TABLE companies
+FIELDS TERMINATED BY ','
+LINES TERMINATED BY '\n'
+IGNORE 1 LINES; -- per ignorar els títols de les columnes
+
+
 
 
 /* 1.1. Exercici 1
@@ -120,6 +158,16 @@ ORDER BY COUNT(id) DESC;
 /* 1.2. Exercici 2
 Mostra la mitjana d'amount per IBAN de les targetes de crèdit a la companyia Donec Ltd, utilitza almenys 2 taules. */
 
+SELECT c.company_name, cc.iban, ROUND(AVG(t.amount),2) AS Mitja
+FROM transactions t
+JOIN companies c
+ON t.business_id = c.company_id
+JOIN credit_cards cc
+ON t.card_id = cc.id
+WHERE c.company_name = 'Donec Ltd'
+GROUP BY t.business_id, t.card_id;
+
+/* -- Trobant l'amount de l'empresa Donec Ltd
 SELECT c.company_name, ROUND(AVG(t.amount),2) AS Mitja
 FROM transactions t
 JOIN companies c
@@ -127,7 +175,7 @@ ON t.business_id = c.company_id
 WHERE c.company_name = 'Donec Ltd' AND declined = 0
 GROUP BY t.business_id;
 
-/* -- Trobant el company_id de targeta de la empresa Donec Ltd: b-2242
+-- Trobant el company_id de targeta de la empresa Donec Ltd: b-2242
 SELECT company_id
 FROM companies
 WHERE company_name = 'Donec Ltd';
